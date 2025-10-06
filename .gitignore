@@ -1,0 +1,6 @@
+
+# Ignore Colab config and logs
+.config/
+.ipynb_checkpoints/
+*.pyc
+__pycache__/
