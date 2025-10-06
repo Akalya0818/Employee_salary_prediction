@@ -22,7 +22,7 @@ input_df = pd.DataFrame({
     'age':[age],
     'education' : [education],
     'occupation': [occupation],
-    'hours-per-week' : [hours_per_weeks],
+    'hours-per-week' : [hours_per_week],
     'experience' : [experience]
     })
 
