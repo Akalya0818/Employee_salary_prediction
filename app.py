@@ -57,12 +57,13 @@ st.write(input_df)
 # --- Prediction ---
 if st.button("Predict Salary Class"):
     try:
-        # Ensure input columns match model's expected features
-        if hasattr(model, "feature_names_in_"):
-    # Add missing columns with 0s
-           for col in model.feature_names_in_:
-               if col not in input_df.columns:
-                  input_df[col] = 0
+        # Since the model doesn't have feature_names_in_, use NumPy array
+        prediction = model.predict(input_df.values)
+        st.success(f"💡 Predicted Salary Class: {prediction[0]}")
+    except Exception as e:
+        st.error("⚠️ Prediction failed. Please check model compatibility.")
+        st.write("Error details:", str(e))
+
 
       # Drop extra columns
         input_df = input_df[model.feature_names_in_]
@@ -91,7 +92,8 @@ if uploaded_file is not None:
 
         batch_data.drop(['education', 'occupation'], axis=1, inplace=True)
 
-        batch_preds = model.predict(batch_data)
+        batch_preds = model.predict(batch_data.values)
+
         batch_data['PredictedClass'] = batch_preds
         st.success("✅ Batch prediction successful!")
         st.write(batch_data.head())
