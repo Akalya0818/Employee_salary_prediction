@@ -4,11 +4,11 @@ import joblib
 
 # Load model safely
 import os
-if not os.path.exists("best_model.pkl"):
-    st.error("⚠️ Model file not found. Please upload 'best_model.pkl' to the app folder.")
+if not os.path.exists("best_model.pk1"):
+    st.error("⚠️ Model file not found. Please upload 'best_model.pk1' to the app folder.")
     st.stop()
 
-model = joblib.load("best_model.pkl")
+model = joblib.load("best_model.pk1")
 
 st.set_page_config(page_title="Employee Salary Classification", page_icon="💰", layout="centered")
 st.title("💰 Employee Salary Classification App")
