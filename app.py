@@ -4,7 +4,7 @@ import joblib
 
 # Load model
 import os
-if not os.path.exists("best_model.pkl"):
+if not os.path.exists("best_model.pk1"):
     st.error("⚠️ Model file not found. Please upload 'best_model.pkl' to the app folder.")
     st.stop()
 
