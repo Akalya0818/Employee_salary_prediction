@@ -8,7 +8,7 @@ if not os.path.exists("best_model.pk1"):
     st.error("⚠️ Model file not found. Please upload 'best_model.pkl' to the app folder.")
     st.stop()
 
-model = joblib.load("best_model.pkl")
+model = joblib.load("best_model.pk1")
 
 st.set_page_config(page_title="Employee Salary Classification", page_icon="💰", layout="centered")
 st.title("💰 Employee Salary Classification App")
