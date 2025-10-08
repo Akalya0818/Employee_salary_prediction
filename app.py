@@ -1,31 +1,34 @@
 import streamlit as st
 import pandas as pd
 import joblib
-
-# Load model safely
 import os
+
+# ----------------- MODEL LOADING -----------------
 if not os.path.exists("best_model.pk1"):
     st.error("⚠️ Model file not found. Please upload 'best_model.pk1' to the app folder.")
     st.stop()
 
 model = joblib.load("best_model.pk1")
 
+# ----------------- PAGE CONFIG -----------------
 st.set_page_config(page_title="Employee Salary Classification", page_icon="💰", layout="centered")
 st.title("💰 Employee Salary Classification App")
 st.markdown("Predict whether an employee earns >50K or <=50K based on employee details.")
 
-# Sidebar inputs
+# ----------------- SIDEBAR INPUTS -----------------
 st.sidebar.header("Input Employee Details")
 age = st.sidebar.slider("Age", 18, 65, 30)
 education = st.sidebar.selectbox("Education Level", ["Bachelors", "Masters", "PhD", "HS-grad", "Assoc", "Some-college"])
-occupation = st.sidebar.selectbox("Job Role", ["Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
-                                               "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
-                                               "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
-                                               "Armed-forces"])
+occupation = st.sidebar.selectbox("Job Role", [
+    "Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
+    "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
+    "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
+    "Armed-forces"
+])
 hours_per_week = st.sidebar.slider("Hours per Week", 1, 80, 40)
 experience = st.sidebar.slider("Years of Experience", 0, 40, 5)
 
-# Base input
+# ----------------- CREATE INPUT DATAFRAME -----------------
 input_df = pd.DataFrame({
     'age': [age],
     'education': [education],
@@ -34,14 +37,16 @@ input_df = pd.DataFrame({
     'experience': [experience]
 })
 
-# ---- MANUAL ONE-HOT ENCODING ----
+# Manual one-hot encoding
 education_cols = ['Bachelors', 'Masters', 'PhD', 'HS-grad', 'Assoc', 'Some-college']
-occupation_cols = ["Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
-                   "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
-                   "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
-                   "Armed-forces"]
+occupation_cols = [
+    "Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
+    "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
+    "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
+    "Armed-forces"
+]
 
-# Create one-hot encoded columns manually
+# Add encoded columns
 for col in education_cols:
     input_df[f'education_{col}'] = 1 if education == col else 0
 
@@ -54,27 +59,19 @@ input_df.drop(['education', 'occupation'], axis=1, inplace=True)
 st.subheader("Processed Input Data (matches model training structure)")
 st.write(input_df)
 
-# --- Prediction ---
+# ----------------- SINGLE PREDICTION -----------------
 if st.button("Predict Salary Class"):
     try:
-        # Since the model doesn't have feature_names_in_, use NumPy array
+        # Predict using NumPy array to avoid feature name mismatch
         prediction = model.predict(input_df.values)
-        st.success(f"💡 Predicted Salary Class: {prediction[0]}")
+        # Convert numerical output to readable label
+        result_label = ">50K" if prediction[0] == 1 else "<=50K"
+        st.success(f"💡 Predicted Salary Class: {result_label}")
     except Exception as e:
         st.error("⚠️ Prediction failed. Please check model compatibility.")
         st.write("Error details:", str(e))
 
-
-      # Drop extra columns
-        input_df = input_df[model.feature_names_in_]
-
-        prediction = model.predict(input_df)
-        st.success(f"💡 Predicted Salary Class: {prediction[0]}")
-    except Exception as e:
-        st.error("⚠️ Prediction failed. Please check model compatibility.")
-        st.write("Error details:", str(e))
-
-# --- Batch Prediction Section ---
+# ----------------- BATCH PREDICTION -----------------
 st.markdown("---")
 st.subheader("Batch Prediction (CSV Upload)")
 uploaded_file = st.file_uploader("Upload CSV for batch prediction", type="csv")
@@ -92,9 +89,10 @@ if uploaded_file is not None:
 
         batch_data.drop(['education', 'occupation'], axis=1, inplace=True)
 
+        # Predict using NumPy array
         batch_preds = model.predict(batch_data.values)
+        batch_data['PredictedClass'] = [">50K" if p == 1 else "<=50K" for p in batch_preds]
 
-        batch_data['PredictedClass'] = batch_preds
         st.success("✅ Batch prediction successful!")
         st.write(batch_data.head())
 
@@ -104,4 +102,5 @@ if uploaded_file is not None:
     except Exception as e:
         st.error("⚠️ Batch prediction failed.")
         st.write("Error details:", str(e))
+
 
