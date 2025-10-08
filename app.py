@@ -4,7 +4,7 @@ import joblib
 
 # Load trained model or pipeline
 # ⚠️ Make sure your file is named correctly: best_model.pkl, not .pk1
-model = joblib.load("best_model.pkl")
+model = joblib.load("best_model.pk1")
 
 # Streamlit app setup
 st.set_page_config(page_title="Employee Salary Classification", page_icon="💰", layout="centered")
