@@ -38,23 +38,41 @@ input_df = pd.DataFrame({
 })
 
 # Manual one-hot encoding
-education_cols = ['Bachelors', 'Masters', 'PhD', 'HS-grad', 'Assoc', 'Some-college']
-occupation_cols = [
-    "Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
-    "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
-    "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
-    "Armed-forces"
-]
+# Keep only numeric or label-encoded features to match model (13 inputs)
+# Convert categorical columns to numeric labels manually
 
-# Add encoded columns
-for col in education_cols:
-    input_df[f'education_{col}'] = 1 if education == col else 0
+education_map = {
+    "Bachelors": 0,
+    "Masters": 1,
+    "PhD": 2,
+    "HS-grad": 3,
+    "Assoc": 4,
+    "Some-college": 5
+}
 
-for col in occupation_cols:
-    input_df[f'occupation_{col}'] = 1 if occupation == col else 0
+occupation_map = {
+    "Tech-support": 0,
+    "Craft-repair": 1,
+    "Other-service": 2,
+    "Sales": 3,
+    "Exec-managerial": 4,
+    "Prof-specialty": 5,
+    "Handlers-cleaners": 6,
+    "Machine-op-inspct": 7,
+    "Adm-clerical": 8,
+    "Farming-fishing": 9,
+    "Transport-moving": 10,
+    "Priv-house-serv": 11,
+    "Protective-serv": 12,
+    "Armed-forces": 13
+}
 
-# Drop original categorical columns
-input_df.drop(['education', 'occupation'], axis=1, inplace=True)
+input_df['education'] = input_df['education'].map(education_map)
+input_df['occupation'] = input_df['occupation'].map(occupation_map)
+
+st.subheader("Processed Input Data (matches model training structure)")
+st.write(input_df)
+
 
 st.subheader("Processed Input Data (matches model training structure)")
 st.write(input_df)
