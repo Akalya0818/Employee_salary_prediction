@@ -57,6 +57,16 @@ st.write(input_df)
 # --- Prediction ---
 if st.button("Predict Salary Class"):
     try:
+        # Ensure input columns match model's expected features
+        if hasattr(model, "feature_names_in_"):
+    # Add missing columns with 0s
+           for col in model.feature_names_in_:
+               if col not in input_df.columns:
+                  input_df[col] = 0
+
+      # Drop extra columns
+        input_df = input_df[model.feature_names_in_]
+
         prediction = model.predict(input_df)
         st.success(f"💡 Predicted Salary Class: {prediction[0]}")
     except Exception as e:
