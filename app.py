@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
+import os
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="💰 Employee Salary Prediction", layout="centered")
@@ -23,17 +24,21 @@ if theme_choice == "Dark":
         unsafe_allow_html=True
     )
 
-# --- MODEL UPLOAD ---
-st.sidebar.header("Upload Model File")
-uploaded_model = st.sidebar.file_uploader("Upload your trained model (.pkl/.joblib)", type=["pkl","joblib"])
-if uploaded_model is None:
-    st.warning("⚠️ Please upload a trained model file to proceed.")
-    st.stop()
-else:
-    model = joblib.load(uploaded_model)
-    st.success("✅ Model loaded successfully!")
+# --- AUTOMATIC MODEL LOADING ---
+MODEL_FILES = ["best_model (2).pk1", "best_model.pk1"]
+model = None
 
-# --- DEFINE FULL FEATURE LIST ---
+for mf in MODEL_FILES:
+    if os.path.exists(mf):
+        model = joblib.load(mf)
+        st.success(f"✅ Model '{mf}' loaded successfully!")
+        break
+
+if model is None:
+    st.error("⚠️ No trained model found in the folder. Please place 'best_model (2).pk1' or 'best_model.pk1' in the same folder as this app.")
+    st.stop()
+
+# --- FEATURE LIST ---
 FULL_EDUCATION_COLS = ['Assoc', 'Bachelors', 'HS-grad', 'Masters', 'PhD']
 FULL_OCCUPATION_COLS = ["Craft-repair", "Exec-managerial", "Other-service", "Sales", "Tech-support"]
 
@@ -55,27 +60,23 @@ experience = st.sidebar.slider("Years of Experience", 0, 40, 5)
 education = st.sidebar.selectbox("Education Level", FULL_EDUCATION_COLS)
 occupation = st.sidebar.selectbox("Occupation", FULL_OCCUPATION_COLS)
 
-# Prepare input dataframe
 input_data = pd.DataFrame({
     'age': [age],
     'hours-per-week': [hours_per_week],
     'experience': [experience]
 })
 
-# One-hot encode
 for col in FULL_EDUCATION_COLS:
     input_data[f'education_{col}'] = [1 if education == col else 0]
 
 for col in FULL_OCCUPATION_COLS:
     input_data[f'occupation_{col}'] = [1 if occupation == col else 0]
 
-# Ensure feature order
 final_input = input_data[MODEL_FEATURE_ORDER]
 
 st.subheader("Processed Input Data (13 features)")
 st.dataframe(final_input)
 
-# Predict single
 if st.button("🔍 Predict Salary Class"):
     try:
         pred = model.predict(final_input.values)
@@ -99,7 +100,6 @@ if uploaded_file is not None:
             st.error(f"⚠ Missing required columns: {', '.join(missing_cols)}")
             st.stop()
 
-        # Process CSV
         processed = pd.DataFrame()
         processed['age'] = df['age']
         processed['hours-per-week'] = df['hours-per-week']
