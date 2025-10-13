@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
-import os
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="💰 Employee Salary Prediction", layout="centered")
@@ -11,14 +10,16 @@ st.set_page_config(page_title="💰 Employee Salary Prediction", layout="centere
 st.title("💰 Employee Salary Classification App")
 st.markdown("Predict whether an employee earns **>50K** or **<=50K** based on input details.")
 
-# --- MODEL LOADING ---
-MODEL_PATH = "best_model_pk2.pkl"  # Adjust if needed (check your GitHub download file name)
-if not os.path.exists(MODEL_PATH):
-    st.error(f"⚠️ Model file '{MODEL_PATH}' not found. Please upload or place it in the same folder.")
-    st.stop()
+# --- MODEL UPLOAD ---
+st.sidebar.header("Upload Model File")
+uploaded_model = st.sidebar.file_uploader("Upload your trained model (.pkl/.joblib)", type=["pkl","joblib"])
 
-model = joblib.load(MODEL_PATH)
-st.success(f"✅ Model '{MODEL_PATH}' loaded successfully.")
+if uploaded_model is None:
+    st.warning("⚠️ Please upload a trained model file to proceed.")
+    st.stop()
+else:
+    model = joblib.load(uploaded_model)
+    st.success("✅ Model loaded successfully!")
 
 # --- SINGLE PREDICTION FORM ---
 st.sidebar.header("📋 Enter Employee Details")
@@ -62,10 +63,8 @@ if st.button("Predict Salary Class"):
     try:
         pred = model.predict(input_df)
         result = ">50K" if pred[0] == 1 else "<=50K"
-        if result == ">50K":
-            st.success(f"💎 Predicted Salary Class: **{result}**")
-        else:
-            st.info(f"📘 Predicted Salary Class: **{result}**")
+        emoji = "💎" if pred[0] == 1 else "📘"
+        st.success(f"{emoji} Predicted Salary Class: **{result}**")
     except Exception as e:
         st.error("⚠️ Prediction failed.")
         st.write(str(e))
