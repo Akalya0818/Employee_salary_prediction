@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 # --- Constants ---
-MODEL_FILE = "best_model.pk1"
+MODEL_FILE = "best_model (2).pk1"
 
 FULL_EDUCATION_COLS = ['Assoc', 'Bachelors', 'HS-grad', 'Masters', 'PhD']
 FULL_OCCUPATION_COLS = [
@@ -28,8 +28,8 @@ REQUIRED_CSV_COLS = ['age', 'hours-per-week', 'education', 'occupation', 'educat
 # --- Load Model ---
 try:
     model_name = MODEL_FILE
-    if os.path.exists("best_model (1).pk1"):
-        model_name = "best_model (1).pk1"
+    if os.path.exists("best_model (2).pk1"):
+        model_name = "best_model (2).pk1"
 
     model = joblib.load(model_name)
     st.success(f"✅ Model '{model_name}' loaded successfully.")
