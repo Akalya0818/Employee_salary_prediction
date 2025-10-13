@@ -6,156 +6,131 @@ import numpy as np
 
 # --- Constants ---
 MODEL_FILE = "best_model.pk1"
-# The full list of categories defined in the original app
-FULL_EDUCATION_COLS = ['Bachelors', 'Masters', 'PhD', 'HS-grad', 'Assoc', 'Some-college']
+
+FULL_EDUCATION_COLS = ['Assoc', 'Bachelors', 'HS-grad', 'Masters', 'PhD']
 FULL_OCCUPATION_COLS = [
-    "Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
-    "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
-    "Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv", "Armed-forces"
+    "Craft-repair", "Exec-managerial", "Other-service", "Sales", "Tech-support"
 ]
 
-# --- CRITICAL FIX: DEFINING THE 13 FEATURES ---
-# Based on the error "expecting 13 features," the model MUST have been trained on:
-# 3 numeric features + 10 one-hot encoded features.
-NUMERIC_COLS = ['age', 'hours-per-week', 'experience'] # Assuming 'experience' for sidebar
-# Since we don't know the exact 10 OHE features, we must select 10 from the 20 available.
-# This is a guess; if it fails, the feature list below is wrong.
-OHE_FEATURE_NAMES = [
-    'education_Bachelors', 'education_Masters', 'education_PhD', 
-    'education_HS-grad', 'education_Assoc', # 5 Education features
-    'occupation_Tech-support', 'occupation_Craft-repair', 'occupation_Other-service', 
-    'occupation_Sales', 'occupation_Exec-managerial' # 5 Occupation features
-] 
+# ✅ Corrected Alphabetical Feature Order (13 features total)
+MODEL_FEATURE_ORDER = [
+    'age', 'experience', 'hours-per-week',
+    'education_Assoc', 'education_Bachelors', 'education_HS-grad',
+    'education_Masters', 'education_PhD',
+    'occupation_Craft-repair', 'occupation_Exec-managerial',
+    'occupation_Other-service', 'occupation_Sales', 'occupation_Tech-support'
+]
 
-# The complete list of 13 features in the exact order the model expects
-MODEL_FEATURE_ORDER = NUMERIC_COLS + OHE_FEATURE_NAMES
-
-# Required columns in the CSV for batch prediction
-# NOTE: adult 3.csv has 'educational-num' not 'experience'
+# Columns required in uploaded CSV
 REQUIRED_CSV_COLS = ['age', 'hours-per-week', 'education', 'occupation', 'educational-num']
 
 
-# --------------- MODEL LOADING ---------------
+# --- Load Model ---
 try:
-    # Use the latest uploaded model name
+    model_name = MODEL_FILE
     if os.path.exists("best_model (1).pk1"):
         model_name = "best_model (1).pk1"
-    elif os.path.exists("best_model.pk1"):
-        model_name = "best_model.pk1"
-    else:
-        st.error("⚠️ Model file not found. Please upload 'best_model.pk1' or 'best_model (1).pk1'.")
-        st.stop()
-        
+
     model = joblib.load(model_name)
-    st.success(f"Model '{model_name}' loaded successfully.")
-    
+    st.success(f"✅ Model '{model_name}' loaded successfully.")
+
 except Exception as e:
-    st.error("⚠️ Failed to load the model. Check scikit-learn version in requirements.txt.")
+    st.error("⚠️ Model file not found or corrupted. Please upload a valid .pk1 file.")
     st.exception(e)
     st.stop()
 
 
-# --------------- PAGE CONFIG & TITLE ---------------
-st.set_page_config(page_title="Employee Salary Classification", page_icon="💰", layout="centered")
-st.title("💰 Employee Salary Classification App")
-st.markdown("Predict whether an employee earns **>50K** or **<=50K** based on employee details.")
+# --- Page Setup ---
+st.set_page_config(page_title="💰 Employee Salary Classification", page_icon="💼", layout="centered")
+st.title("💼 Employee Salary Classification App")
+st.markdown("Predict whether an employee earns **>50K** or **<=50K** based on personal and professional details.")
 
-# --------------- SIDEBAR INPUTS (Single Prediction) ---------------
-st.sidebar.header("Input Employee Details")
+
+# --- Sidebar Input Section ---
+st.sidebar.header("Enter Employee Details")
+
 age = st.sidebar.slider("Age", 18, 65, 30)
-education = st.sidebar.selectbox("Education Level", FULL_EDUCATION_COLS)
-occupation = st.sidebar.selectbox("Job Role", FULL_OCCUPATION_COLS)
 hours_per_week = st.sidebar.slider("Hours per Week", 1, 80, 40)
 experience = st.sidebar.slider("Years of Experience", 0, 40, 5)
+education = st.sidebar.selectbox("Education Level", FULL_EDUCATION_COLS)
+occupation = st.sidebar.selectbox("Occupation", FULL_OCCUPATION_COLS)
 
-# --------------- CREATE INPUT DATAFRAME (Single Prediction) ---------------
-# Create a DataFrame with ALL possible OHE columns first, then filter to the 13 required.
-# This ensures the OHE features are correctly generated regardless of which ones the model uses.
-single_input = pd.DataFrame({
+
+# --- Prepare Input Data ---
+input_data = pd.DataFrame({
     'age': [age],
     'hours-per-week': [hours_per_week],
     'experience': [experience]
 })
 
-# One-hot encode ALL categorical inputs
+# One-hot encode categorical features
 for col in FULL_EDUCATION_COLS:
-    single_input[f'education_{col}'] = [1 if education == col else 0]
+    input_data[f'education_{col}'] = [1 if education == col else 0]
 
 for col in FULL_OCCUPATION_COLS:
-    single_input[f'occupation_{col}'] = [1 if occupation == col else 0]
+    input_data[f'occupation_{col}'] = [1 if occupation == col else 0]
 
-# Filter the input to only include the 13 features the model expects
-final_single_input = single_input[MODEL_FEATURE_ORDER]
+# Filter to model’s expected order
+final_input = input_data[MODEL_FEATURE_ORDER]
 
-st.subheader("Processed Input Data (13 Features)")
-st.write(final_single_input)
+st.subheader("Processed Input (13 features):")
+st.dataframe(final_input)
 
-# --------------- SINGLE PREDICTION ---------------
-if st.button("Predict Salary Class"):
+
+# --- Predict Single Employee Salary ---
+if st.button("🔍 Predict Salary Class"):
     try:
-        # Pass the 13-feature input
-        prediction = model.predict(final_single_input.values) 
-        result_label = "**>50K**" if prediction[0] == 1 else "**<=50K**"
-        st.success(f"💡 Predicted Salary Class: {result_label}")
+        prediction = model.predict(final_input.values)
+        result_label = ">50K" if prediction[0] == 1 else "<=50K"
+        emoji = "💸" if prediction[0] == 1 else "🪙"
+        st.success(f"{emoji} Predicted Salary Class: **{result_label}**")
     except Exception as e:
-        st.error("⚠️ Prediction failed. The feature set or order is likely incorrect.")
-        st.write("Error details:", str(e))
+        st.error("⚠️ Prediction failed — likely due to feature mismatch.")
+        st.write(str(e))
 
-# --------------- BATCH PREDICTION (CSV Upload) ---------------
+
+# --- Batch Prediction ---
 st.markdown("---")
-st.subheader("Batch Prediction (CSV Upload)")
-uploaded_file = st.file_uploader("Upload CSV for batch prediction", type="csv")
+st.subheader("📂 Batch Prediction (Upload CSV)")
+
+uploaded_file = st.file_uploader("Upload your CSV file", type="csv")
 
 if uploaded_file is not None:
     try:
-        batch_data = pd.read_csv(uploaded_file)
-        
-        # --- Robustness Check for required columns in the CSV ---
-        missing_cols = [col for col in REQUIRED_CSV_COLS if col not in batch_data.columns]
+        df = pd.read_csv(uploaded_file)
+        missing_cols = [c for c in REQUIRED_CSV_COLS if c not in df.columns]
         if missing_cols:
-            st.error(f"⚠️ The uploaded CSV is missing the following required columns: **{', '.join(missing_cols)}**.")
+            st.error(f"⚠️ Missing required columns: {', '.join(missing_cols)}")
             st.stop()
-        
-        # --- Data Preprocessing for Batch Prediction ---
-        # 1. Create a placeholder DataFrame with all possible features
+
+        # Process CSV
         processed = pd.DataFrame()
-        processed['age'] = batch_data['age']
-        processed['hours-per-week'] = batch_data['hours-per-week']
-        # CRITICAL FIX: Map 'educational-num' from CSV to the 'experience' feature slot
-        processed['experience'] = batch_data['educational-num'] 
+        processed['age'] = df['age']
+        processed['hours-per-week'] = df['hours-per-week']
+        processed['experience'] = df['educational-num']  # mapped from NPTEL dataset column
 
-        # Clean and One-hot encode ALL possible education columns
-        batch_data['education'] = batch_data['education'].astype(str).str.strip()
         for col in FULL_EDUCATION_COLS:
-            processed[f'education_{col}'] = (batch_data['education'] == col).astype(int)
-
-        # Clean and One-hot encode ALL possible occupation columns
-        batch_data['occupation'] = batch_data['occupation'].astype(str).str.strip()
+            processed[f'education_{col}'] = (df['education'].astype(str).str.strip() == col).astype(int)
         for col in FULL_OCCUPATION_COLS:
-            processed[f'occupation_{col}'] = (batch_data['occupation'] == col).astype(int)
-        
-        # 2. Filter the processed data to ONLY include the 13 features in the correct order
+            processed[f'occupation_{col}'] = (df['occupation'].astype(str).str.strip() == col).astype(int)
+
         final_batch_input = processed[MODEL_FEATURE_ORDER]
 
-        st.write("Processed batch input (first 5 rows with 13 features):")
-        st.write(final_batch_input.head())
+        # Predict in batch
+        preds = model.predict(final_batch_input.values)
+        df['PredictedClass'] = [">50K" if p == 1 else "<=50K" for p in preds]
 
-        # --- Run Batch Prediction ---
-        batch_preds = model.predict(final_batch_input.values)
-        batch_data['PredictedClass'] = [">50K" if p == 1 else "<=50K" for p in batch_preds]
+        st.success("✅ Batch prediction successful!")
+        st.dataframe(df.head())
 
-        st.success("✅ Batch prediction successful! Preview of results:")
-        st.dataframe(batch_data.head())
-
-        # --- Download Button ---
-        csv = batch_data.to_csv(index=False).encode('utf-8')
+        csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            "⬇️ Download Predictions CSV", 
-            csv, 
-            file_name='predicted_classes.csv', 
-            mime='text/csv'
+            "⬇️ Download Results",
+            csv,
+            file_name="salary_predictions.csv",
+            mime="text/csv"
         )
 
     except Exception as e:
-        st.error("⚠️ Batch prediction failed due to an unexpected error. The model feature set or order is likely still incorrect.")
-        st.write("Error details:", str(e))
+        st.error("⚠️ Error during batch prediction.")
+        st.write(str(e))
